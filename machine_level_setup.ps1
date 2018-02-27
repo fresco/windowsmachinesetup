@@ -10,6 +10,13 @@ function KeypressToContinue() {
     $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
 }
 
+function GetFileFromUrl($url) {
+    $webClient = New-Object System.Net.WebClient
+    $webClient.Proxy = [System.Net.GlobalProxySelection]::GetEmptyWebProxy()
+    $output = $webClient.DownloadString($url)
+    return $output
+}
+
 
 #######################
 # wait for user input #
@@ -43,15 +50,11 @@ pushd $setup_files_dir_name
 # chain install some package managers #
 #######################################
 
-install-module -name nuget
-nuget install chocolatey
-pushd chocolatey*
-pushd tools
-    ./chocolateyInstall.ps1
-popd
-popd
-
-. $profile
+Set-ExecutionPolicy Bypass -Scope Process -Force
+Invoke-WebRequest https://chocolatey.org/install.ps1 -UseBasicParsing -Proxy http://proxy:80 -ProxyUseDefaultCredentials | iex
+. $profile  # Use latest PowerShell profile if it exists
+# Refresh path so we can call `choco`
+$env:Path = [System.Environment]::ExpandEnvironmentVariables([System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User"))
 
 
 #######################
